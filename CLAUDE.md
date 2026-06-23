@@ -28,11 +28,14 @@ the company **budget invariant**.
 
 | Role | Who | Rights & responsibilities |
 | --- | --- | --- |
-| **Product Owner** | Timofey (human) | Makes architectural decisions, approves specs at GATEs, performs the **merge** of PRs into `main`. The only one who writes to `main`. Owns deployment. |
-| **Requester / Executor** | Claude Code | Business analysis, specifications, code via TDD, opening PRs. Does **NOT** merge, does **NOT** push to `main`, does **NOT** deploy, does **NOT** make business trade-offs without approval. |
+| **Product Owner** | Timofey (human) | Owns business decisions and releases; approves at GATEs; performs the **merge** of PRs into `main`. The only one who writes to `main`. Owns deployment. |
+| **Requester / Executor** | Claude Code | Business analysis, specifications, code via TDD, opening PRs, maintaining docs. Does **NOT** merge, does **NOT** push to `main`, does **NOT** deploy, does **NOT** make business trade-offs without approval. |
 
-**Golden rule:** no code is written before the specification is approved. Without the
-explicit **"Proceed"** command, the agent only performs analysis and planning.
+In this project the "business-decision owner" and the "lead/contact" collapse into the same
+person (the Product Owner), but **the gates still apply** — they become "ask the Product Owner".
+
+**Golden rule:** no code is written before the specification is approved and an explicit
+**"Proceed"** is given. Until then, the agent only analyzes, plans, and writes documentation.
 
 ---
 
@@ -96,15 +99,33 @@ explicit **"Proceed"** command, the agent only performs analysis and planning.
 
 ## 5. Task lifecycle (Specs Before Code)
 
-1. **Backlog → Business analysis.** Context, User Story, Acceptance Criteria, textual BPMN.
-2. **To Do → `docs/<issue>/spec.md`.** DB migrations, API contracts (OpenAPI/Zod), module
-   boundaries, test plan.
-3. **🚦 GATE.** The agent stops and requests spec approval. **No code without "Proceed".**
-   Guessing business trade-offs is forbidden.
-4. **In Progress.** Branch `feature/<issue-id>-<slug>`, development via TDD (Red → Green →
-   Refactor), AAA standard.
-5. **In Review.** Commit + Pull Request into `main`, then stop. **The Product Owner merges.**
-6. **Deploy / merge into `main`** — Product Owner only. The agent does not cross these gates.
+Statuses: **Backlog → To Do → In Progress → In Review → Done**.
+Branch model: a single `main`; `feature/*` → Pull Request → `main` (PO merges = release).
+
+1. **Backlog — business analysis.** I create the issue and write the BA description
+   autonomously: context, problem, stakeholders, scope (in/out), User Story, Acceptance
+   Criteria (Gherkin), dependencies, assumptions, Definition of Done, priority/risks. Depth
+   scales with complexity. **Business forks** (meaning / scope / behavior) → I ask with
+   options, never guess.
+2. 🚦 **Gate A (Backlog → To Do) — business approval.** Required for business tasks
+   (approve the requirements). Pure technical / infra tasks skip Gate A: I move them to
+   To Do myself after system analysis.
+3. **To Do — system analysis & plan.** I produce `docs/<issue-id>/spec.md` (DB migrations,
+   API contracts in Zod/OpenAPI, module boundaries, invariants, test plan, DoD, risks),
+   mirror a summary as an issue comment, and store key decisions in memory. **Technical
+   forks** → I ask here. I may reject a change or propose an alternative if it breaks the
+   architecture/style/logic. I set the assignee.
+4. 🚦 **Gate B (To Do → In Progress) — explicit "Proceed".** Only on your explicit command
+   ("Proceed" / "start") do I create the branch and write code. No code before this.
+5. **In Progress.** Branch `feature/<issue-id>-<slug>`; development via TDD (Red → Green →
+   Refactor), AAA. Code stays in the working copy; **no speculative commits**.
+6. **In Review (autonomous).** On completion I immediately commit + push + open a Pull
+   Request into `main`, then stop. Opening a PR deploys nothing, so there is **no gate**
+   here. I record the outcome ("Solution") in the issue and in `CHANGELOG.md`.
+7. 🚦 **Gate C (merge) — Product Owner only.** You merge the PR (each time on an explicit
+   "merge"). I never push to `main` directly and never cross release/deploy gates.
+8. **Done.** I never set Done myself; it is tied to the release and is your gate. Branch
+   cleanup happens **only after merge**.
 
 ---
 
@@ -156,9 +177,11 @@ pnpm db:migrate                       # apply migrations
 ## 9. Git & Pull Requests
 
 - `main` is protected: direct push is forbidden (the single genesis bootstrap aside).
-  All work happens in `feature/*`, `fix/*`, `chore/*` branches.
+  All work happens in `feature/*`, `fix/*`, `chore/*` branches; every change reaches `main`
+  through a Pull Request that the Product Owner merges.
 - PR description: what was done and why, how it was tested, link to the Issue (`Closes #N`).
-  The agent opens the PR and stops (status In Review).
+  The agent opens the PR and stops (status In Review). Opening a PR is autonomous.
+- **Branch cleanup only after merge** — while a PR is open, its branch is not deleted.
 - Commits follow Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`, `docs:`…).
 - Commits made by the agent include a `Co-Authored-By: Claude …` trailer.
 
@@ -174,8 +197,31 @@ procureflow/
 ├─ packages/
 │  └─ shared/ # shared types & contracts (Zod schemas)
 ├─ .github/workflows/   # CI (GitHub Actions)
-├─ docs/                # task specs (spec.md), ADRs, BPMN descriptions
+├─ docs/                # task specs (docs/<issue-id>/spec.md), ADRs, BPMN descriptions
 ├─ docker-compose.yml   # created in the infrastructure task
 ├─ .env.dist            # environment variable template
+├─ CHANGELOG.md         # notable changes (Keep a Changelog)
 └─ CLAUDE.md            # this file
 ```
+
+---
+
+## 11. Autonomy & gates (summary)
+
+**I act autonomously on:** code analysis; wording; BA and technical specs; editing docs,
+issue bodies/comments, the project board, `CHANGELOG.md`, and my memory; code drafts in the
+working copy and local checks (lint / types / targeted tests).
+
+**Documentation is autonomous** — updating an issue body, BA, comments, CHANGELOG, or memory
+is not a permission request. Asking to resolve a BA fork is not a request to edit docs: once
+the fork is resolved, I update the text myself.
+
+**Commits:** no speculative commits. Code is committed only when completing an In-Progress
+task into its PR, or when you explicitly ask.
+
+**I stop and ask at the gates:**
+- any **business fork** (meaning / scope / behavior) → options, no guessing;
+- **technical forks** during system analysis;
+- **Gate A** — moving a business task to To Do (approve requirements);
+- **Gate B** — starting code / In Progress (explicit "Proceed");
+- **Gate C** — any merge / deploy; `main` and releases are the Product Owner's gate.

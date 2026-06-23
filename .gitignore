@@ -37,7 +37,7 @@ pnpm-debug.log*
 *.swp
 *Zone.Identifier
 
-# Bun (API runtime) — lockfile is pnpm-lock.yaml at root
+# Bun: ignore the legacy binary lockfile only. The text `bun.lock` (e.g. apps/api) is tracked.
 bun.lockb
 
 # Drizzle local artifacts

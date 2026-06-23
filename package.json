@@ -16,6 +16,8 @@
     "infra:down": "docker compose down",
     "infra:reset": "docker compose down -v",
     "infra:logs": "docker compose logs -f",
-    "infra:ps": "docker compose ps"
+    "infra:ps": "docker compose ps",
+    "api:test": "docker compose run --rm --no-deps api bun test",
+    "api:typecheck": "docker compose run --rm --no-deps api bunx tsc --noEmit"
   }
 }

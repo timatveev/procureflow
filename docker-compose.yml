@@ -20,7 +20,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 30s # generous: first-run initdb on a fresh volume / slow disk
     networks: [procureflow]
 
   redis: # redis:7-alpine
@@ -58,8 +58,12 @@ services:
       target: dev
     restart: unless-stopped
     env_file: [.env]
+    # The API always listens on a fixed 3000 inside the container; this `environment` block
+    # overrides any PORT from .env, so only the host side (${API_PORT}) stays configurable.
+    environment:
+      PORT: "3000"
     ports:
-      - "${API_PORT}:3000"
+      - "${API_PORT}:3000" # host:container — host port configurable, container fixed at 3000
     volumes:
       - ./apps/api:/app # hot reload
       - /app/node_modules # keep container-installed deps (anonymous volume)

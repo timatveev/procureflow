@@ -31,17 +31,13 @@ These were confirmed with the Product Owner before writing this spec:
 | 5 | API service depth | **Minimal health stub** (`GET /healthz`); full API bootstrap stays in #2. |
 | 6 | API build | **Dedicated `apps/api/Dockerfile`** with a `dev` target on `oven/bun`. |
 
-### 2.1 Open decision for Gate B (recommendation included)
+### 2.1 Postgres password (resolved at Gate B)
 
-- **Postgres password in the template.** The current `.env.dist` ships an empty
-  `POSTGRES_PASSWORD`; the official `postgres` image refuses to initialize without a password
-  (or `POSTGRES_HOST_AUTH_METHOD=trust`), which conflicts with the AC "`docker compose up -d`
-  brings the stack up cleanly".
-  **Recommendation:** put a clearly-marked **dev-only, non-secret** default in `.env.dist`
-  (e.g. `POSTGRES_PASSWORD=procureflow_dev`) and a matching `DATABASE_URL`. It keeps the setup
-  prod-like, makes first run work out of the box, and remains within CLAUDE.md §8 (no *real*
-  secret is committed; `.env` stays gitignored). Alternative if you prefer the template to hold
-  no values at all: use `POSTGRES_HOST_AUTH_METHOD=trust` for local dev. **Awaiting your call.**
+The official `postgres` image refuses to initialize with an empty password, which would conflict
+with the AC "`docker compose up -d` brings the stack up cleanly". **Decision (PO, Gate B):** ship
+a clearly-marked **dev-only, non-secret** default `POSTGRES_PASSWORD=procureflow_dev` in
+`.env.dist` (with a matching `DATABASE_URL`). It keeps the setup prod-like and works out of the
+box; it stays within CLAUDE.md §8 (no *real* secret is committed; `.env` is gitignored).
 
 ## 3. Scope
 
@@ -103,7 +99,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 30s
     networks: [procureflow]
 
   redis: # redis:7-alpine
@@ -131,9 +127,8 @@ services:
       - "${SMTP_PORT}:1025"        # SMTP capture
       - "${MAILPIT_UI_PORT}:8025"  # Web UI
     networks: [procureflow]
-    # Healthcheck deferred: the pinned image may lack a shell/wget. Mailpit is not a
-    # service_healthy dependency, so its absence does not block the stack. If the image
-    # ships wget, add: ["CMD", "wget", "--spider", "-q", "http://localhost:8025/readyz"].
+    # No healthcheck defined here: the image already ships its own HEALTHCHECK (verified —
+    # Compose reports mailpit healthy). Mailpit is only a service_started dependency anyway.
 
   api: # oven/bun (built from apps/api/Dockerfile, target: dev)
     build:
@@ -142,6 +137,8 @@ services:
       target: dev
     restart: unless-stopped
     env_file: [.env]
+    environment:
+      PORT: "3000"               # fixed internal port; only host side (${API_PORT}) is configurable
     ports:
       - "${API_PORT}:3000"
     volumes:
@@ -179,7 +176,7 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json bun.lock* ./
-RUN bun install
+RUN bun install --frozen-lockfile
 
 FROM base AS dev
 ENV NODE_ENV=development
@@ -193,14 +190,18 @@ CMD ["bun", "run", "--watch", "src/index.ts"]
 ```ts
 import { Hono } from "hono";
 
+import { config } from "./config";
+
 export const app = new Hono();
 
 app.get("/healthz", (c) => c.json({ status: "ok", service: "procureflow-api" }));
 
-const port = Number(process.env.API_PORT ?? 3000);
-
-export default { port, fetch: app.fetch };
+export default { port: config.PORT, fetch: app.fetch };
 ```
+
+The listen port comes from a Zod-validated `src/config.ts` (`PORT`, default 3000, range-checked;
+invalid values fail fast) with its own `config.test.ts`. The internal port is decoupled from the
+host mapping (see §5).
 
 ### `apps/api/src/index.test.ts` (written first — TDD)
 ```ts
@@ -223,8 +224,8 @@ describe("GET /healthz", () => {
 });
 ```
 
-`apps/api/package.json` (deps `hono`; dev `typescript`, `@types/bun`) and a `tsconfig.json`
-(`strict: true`) will be added; exact versions pinned at implementation.
+`apps/api/package.json` (deps `hono`, `zod`; dev `typescript`, `@types/bun`) and a strict
+`tsconfig.json`; all versions pinned to caret ranges matching the committed `bun.lock`.
 
 ### API contract (the only contract in this task)
 
@@ -251,16 +252,19 @@ Compose auto-loads `.env` from the repo root. Setup: `cp .env.dist .env` → adj
 ## 8. Run commands — planned root `package.json` scripts
 
 ```jsonc
-"infra:up":    "docker compose up -d",
-"infra:down":  "docker compose down",
-"infra:reset": "docker compose down -v",   // drops named volumes (DB data)
-"infra:logs":  "docker compose logs -f",
-"infra:ps":    "docker compose ps",
-"dev":         "docker compose up"
+"dev":           "docker compose up",
+"infra:up":      "docker compose up -d",
+"infra:down":    "docker compose down",
+"infra:reset":   "docker compose down -v",   // drops named volumes (DB data)
+"infra:logs":    "docker compose logs -f",
+"infra:ps":      "docker compose ps",
+"api:test":      "docker compose run --rm --no-deps api bun test",
+"api:typecheck": "docker compose run --rm --no-deps api bunx tsc --noEmit"
 ```
 
-(The broader `pnpm dev` / `pnpm test` / `pnpm typecheck` from CLAUDE.md §7 that span the whole
-workspace are completed in later tasks once `web` and the full API land.)
+`tsc --noEmit` and `bun test` run inside the `api` container. The workspace-wide `pnpm dev` /
+`pnpm lint` / `pnpm typecheck` / `pnpm test` from CLAUDE.md §7 (and a Biome config) are deferred
+to a dedicated quality-tooling task once `web` and the full API land.
 
 ## 9. Test / verification plan
 
@@ -283,7 +287,7 @@ unit test written **before** the implementation (CLAUDE.md §6).
 | --- | --- |
 | Empty `POSTGRES_PASSWORD` blocks DB init | §2.1 decision (dev default or `trust`). |
 | `node_modules` bind-mount clobbered by host | Anonymous volume `/app/node_modules`. |
-| Mailpit image lacks shell/wget for healthcheck | Healthcheck deferred; Mailpit not a `service_healthy` dep. |
+| Mailpit health unknown at spec time | Verified: the image ships its own HEALTHCHECK; Mailpit is only a `service_started` dep. |
 | Host port conflicts (5432/6379/8025/3000) | All ports are `.env`-configurable. |
 | Digest pins drift / wrong platform | Index (multi-arch) digests used; re-verified at implementation; documented refresh procedure. |
 | pnpm-workspace vs `bun install` friction | API deps installed by Bun in-container for now; reconciled in #2. |
@@ -296,6 +300,38 @@ unit test written **before** the implementation (CLAUDE.md §6).
   healthchecks from a fresh checkout.
 - `GET /healthz` returns `200`; the `bun test` for it passes.
 - `.env.dist` updated & documented; `README.md` has a "Local development environment" section.
-- `biome check` and `tsc --noEmit` pass on the new API code (English-only, no leftover Russian).
+- `tsc --noEmit` and `bun test` pass for the API, run inside the container
+  (`pnpm api:typecheck` / `pnpm api:test`); code is English-only. Biome config and workspace-wide
+  `pnpm lint`/`typecheck`/`test` (CLAUDE.md §7) are deferred to a dedicated quality-tooling task.
 - `CHANGELOG.md` updated; PR opened against `main` with `Closes #1` (status → In Review).
 - Branch cleanup only after the Product Owner merges (Gate C).
+
+## 12. Post-review changes (PR #15)
+
+Applied in response to the Product Owner's review (board returned to In Progress):
+
+**Must fix**
+1. **Port decoupling** — the API listens on a fixed internal `3000`; compose pins `PORT=3000`
+   for the container and exposes only the host side `${API_PORT}`, so a custom `API_PORT`
+   (e.g. 8080) no longer breaks the mapping/healthcheck.
+2. **Validated config** — `src/config.ts` parses `PORT` via Zod (default 3000, range-checked,
+   fails fast on empty/non-numeric); covered by `src/config.test.ts`.
+3. **Reproducible install** — `Dockerfile` uses `bun install --frozen-lockfile`.
+4. **Honest DoD** — narrowed to `tsc` / `bun test` (in-container); Biome + workspace scripts
+   deferred to a quality-tooling task.
+
+**Should fix**
+5. `.env.dist` documents that `DATABASE_URL`/`REDIS_URL`/`SMTP_HOST` resolve only in-network and
+   that host tools must override the host to `localhost`.
+6. README notes the anonymous `node_modules` volume needs `--renew-anon-volumes` after dep changes.
+7. Postgres `start_period` raised 10s → 30s.
+8. `.gitignore` comment corrected (text `bun.lock` is tracked; only legacy `bun.lockb` ignored).
+9. `@types/bun` and `zod` pinned to caret ranges matching `bun.lock`.
+
+**Nits**
+10. Mailpit healthcheck reconciled — the image ships its own HEALTHCHECK (verified).
+11. Root `dev = docker compose up` kept as a deliberate placeholder; the §7 `pnpm dev` (api+web)
+    lands with the web app.
+12. Missing `.env` left as the documented `cp .env.dist .env` step (baking defaults into compose
+    would either duplicate the template or commit the password).
+13. §2.1 updated to record the Gate-B password approval.

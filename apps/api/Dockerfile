@@ -8,7 +8,7 @@ WORKDIR /app
 # --- dependencies: cached unless package.json / lockfile change ---
 FROM base AS deps
 COPY package.json bun.lock* ./
-RUN bun install
+RUN bun install --frozen-lockfile
 
 # --- development target: hot reload via `bun --watch` ---
 FROM base AS dev

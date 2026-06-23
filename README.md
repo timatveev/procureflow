@@ -51,6 +51,10 @@ docker compose down        # stop (keeps the database volume)
 docker compose down -v     # stop and wipe volumes (fresh database)
 ```
 
+> **Changing API dependencies?** The `api` container keeps `node_modules` in an anonymous
+> volume that Compose does not refresh on a plain rebuild. After editing deps, run
+> `docker compose up -d --build --renew-anon-volumes` (or `docker compose down && up -d --build`).
+
 Images are pinned by digest for reproducibility; the API runs with hot reload (`bun --watch`).
 
 ## Status

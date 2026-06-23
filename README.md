@@ -10,6 +10,14 @@ status change emits an asynchronous email notification.
 > A training project demonstrating the **"Specs Before Code" / Agentic Coding** methodology.
 > Development is public, incremental, and gated — see [CLAUDE.md](./CLAUDE.md).
 
+| Service passport | |
+| --- | --- |
+| **Owner** | Timofey — Product Owner (business decisions, releases, merges) |
+| **Status** | 🚧 Initialization |
+| **Methodology** | Specs Before Code (gated lifecycle) — [CLAUDE.md](./CLAUDE.md) |
+| **Docs** | [docs/](./docs/) · [ADRs](./docs/adr/) · [task specs](./docs/specs/) |
+| **Delivery** | [project board](https://github.com/users/timatveev/projects/3) · [CHANGELOG](./CHANGELOG.md) |
+
 ## Stack
 
 - **Backend:** TypeScript · Hono · Bun · modular monolith (DDD)
@@ -23,7 +31,7 @@ status change emits an asynchronous email notification.
 apps/api          # Hono + Bun (modular monolith)
 apps/web          # React + Vite SPA
 packages/shared   # shared contracts (Zod)
-docs/             # task specifications, ADRs, BPMN
+docs/             # Docs-as-Code: ADRs, guides, reference, explanation, runbooks, task specs
 ```
 
 ## Local development environment
@@ -56,6 +64,25 @@ docker compose down -v     # stop and wipe volumes (fresh database)
 > `docker compose up -d --build --renew-anon-volumes` (or `docker compose down && up -d --build`).
 
 Images are pinned by digest for reproducibility; the API runs with hot reload (`bun --watch`).
+
+## Documentation
+
+We practise **Docs-as-Code** — documentation lives in the repo, is versioned with the code, and is
+reviewed in the same Pull Requests (no external Wiki). Durable docs follow the
+[Diátaxis](https://diataxis.fr/) split, complemented by ADRs and per-task specs. Start at the
+[**docs index**](./docs/README.md).
+
+| Where | What |
+| --- | --- |
+| [docs/adr/](./docs/adr/) | Architecture Decision Records — *why* a choice was made. |
+| [docs/guides/](./docs/guides/) | How-to recipes (task-oriented). |
+| [docs/reference/](./docs/reference/) | Look-up material — API, config, schema. |
+| [docs/explanation/](./docs/explanation/) | Concepts & architecture — incl. [how we document](./docs/explanation/documentation.md). |
+| [docs/runbooks/](./docs/runbooks/) | Operational & incident procedures. |
+| [docs/specs/](./docs/specs/) | Per-task system-analysis specs (`docs/specs/PRF-<n>/spec.md`). |
+
+Contributing? The repo ships GitHub **Issue Forms** and a **PR template** (under
+[.github/](./.github/)) that prompt you to keep docs and ADRs current.
 
 ## Status
 

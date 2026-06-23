@@ -1,0 +1,59 @@
+name: Bug report
+description: Something behaves incorrectly.
+title: "[PRF-N] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Title key `[PRF-N]`:** `N` is the **issue-only counter** (the N-th issue created), not the
+        GitHub number — set it yourself. English only.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences — what is wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal, ordered steps that trigger the bug.
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include error messages / logs if any (no secrets).
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment / version
+      description: Commit SHA or branch, OS, how it was run (Docker / host).
+    validations:
+      required: false
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity / impact
+      options:
+        - "Low — cosmetic / workaround exists"
+        - "Medium — degraded but usable"
+        - "High — core flow broken"
+        - "Critical — data loss / invariant violated"
+    validations:
+      required: false

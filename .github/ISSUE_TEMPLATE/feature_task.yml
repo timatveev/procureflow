@@ -1,0 +1,93 @@
+name: Feature / Task
+description: A unit of work with business or technical value, structured for the "Specs Before Code" lifecycle.
+title: "[PRF-N] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fill in what you can — the Product Owner / executor will refine during business and system
+        analysis (see CLAUDE.md §5).
+
+        **Title key `[PRF-N]`:** `N` is the **issue-only counter** (the N-th issue created), *not*
+        the GitHub number, and GitHub cannot auto-fill it — set it yourself = (count of existing
+        issues) + 1. The semantic type (Feature / Task / …) lives in the board **Type** field and
+        labels, not the title. English only.
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Background — why this matters now, where it fits.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: The concrete gap or need this addresses.
+    validations:
+      required: true
+  - type: textarea
+    id: stakeholders
+    attributes:
+      label: Stakeholders
+      description: Who is affected / who consumes the outcome.
+    validations:
+      required: false
+  - type: textarea
+    id: scope-in
+    attributes:
+      label: Scope — in
+      description: What this task delivers.
+    validations:
+      required: true
+  - type: textarea
+    id: scope-out
+    attributes:
+      label: Scope — out (deferred)
+      description: Explicitly out of scope / follow-ups.
+    validations:
+      required: false
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User story
+      description: "As a <role>, I want <capability>, so that <benefit>."
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria (Gherkin)
+      description: Given / When / Then scenarios that define "done".
+      render: gherkin
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Blocking/related issues or external prerequisites.
+    validations:
+      required: false
+  - type: textarea
+    id: assumptions
+    attributes:
+      label: Assumptions
+      description: What we take as given (to be validated).
+    validations:
+      required: false
+  - type: textarea
+    id: definition-of-done
+    attributes:
+      label: Definition of Done
+      description: Checklist that must hold before the task is Done.
+    validations:
+      required: true
+  - type: textarea
+    id: priority-risks
+    attributes:
+      label: Priority / risks
+      description: Priority rationale and notable risks + mitigations.
+    validations:
+      required: false

@@ -24,3 +24,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/).
 - Adopted the adapted task lifecycle (`CLAUDE.md` §5/§11): statuses
   **Backlog → To Do → In Progress → In Review → Done**, a single-`main` branch model,
   and explicit gates A (business approval), B (start coding), C (merge).
+- Adopted the `[PRF-N]` issue/PR/branch/doc naming key (`CLAUDE.md` §5/§9/§10, PRF-14): titles
+  `[PRF-N] <subject>` (semantic type moves to labels / board `Type`), branches
+  `feature/PRF-N-<slug>`, specs `docs/PRF-N/spec.md`. `N` is an issue-only counter (the N-th
+  issue created), not the GitHub number. Re-keyed the first spec `docs/1 → docs/PRF-1`.

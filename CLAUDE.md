@@ -100,7 +100,7 @@ person (the Product Owner), but **the gates still apply** — they become "ask t
 ## 5. Task lifecycle (Specs Before Code)
 
 Statuses: **Backlog → To Do → In Progress → In Review → Done**.
-Branch model: a single `main`; `feature/*` → Pull Request → `main` (PO merges = release).
+Branch model: a single `main`; `feature/PRF-N-<slug>` → Pull Request → `main` (PO merges = release).
 
 1. **Backlog — business analysis.** I create the issue and write the BA description
    autonomously: context, problem, stakeholders, scope (in/out), User Story, Acceptance
@@ -110,14 +110,14 @@ Branch model: a single `main`; `feature/*` → Pull Request → `main` (PO merge
 2. 🚦 **Gate A (Backlog → To Do) — business approval.** Required for business tasks
    (approve the requirements). Pure technical / infra tasks skip Gate A: I move them to
    To Do myself after system analysis.
-3. **To Do — system analysis & plan.** I produce `docs/<issue-id>/spec.md` (DB migrations,
+3. **To Do — system analysis & plan.** I produce `docs/PRF-N/spec.md` (DB migrations,
    API contracts in Zod/OpenAPI, module boundaries, invariants, test plan, DoD, risks),
    mirror a summary as an issue comment, and store key decisions in memory. **Technical
    forks** → I ask here. I may reject a change or propose an alternative if it breaks the
    architecture/style/logic. I set the assignee.
 4. 🚦 **Gate B (To Do → In Progress) — explicit "Proceed".** Only on your explicit command
    ("Proceed" / "start") do I create the branch and write code. No code before this.
-5. **In Progress.** Branch `feature/<issue-id>-<slug>`; development via TDD (Red → Green →
+5. **In Progress.** Branch `feature/PRF-N-<slug>`; development via TDD (Red → Green →
    Refactor), AAA. Code stays in the working copy; **no speculative commits**.
 6. **In Review (autonomous).** On completion I immediately commit + push + open a Pull
    Request into `main`, then stop. Opening a PR deploys nothing, so there is **no gate**
@@ -177,12 +177,23 @@ pnpm db:migrate                       # apply migrations
 ## 9. Git & Pull Requests
 
 - `main` is protected: direct push is forbidden (the single genesis bootstrap aside).
-  All work happens in `feature/*`, `fix/*`, `chore/*` branches; every change reaches `main`
-  through a Pull Request that the Product Owner merges.
+  All work happens in `feature/PRF-N-<slug>` (or `fix/`, `chore/`) branches; every change
+  reaches `main` through a Pull Request that the Product Owner merges.
+- **Issue key `PRF-N`.** Every issue has a key `PRF-N`. **`N` is an issue-only counter — the
+  N-th issue created — NOT the GitHub number** (GitHub shares one number sequence across issues
+  and PRs, so they diverge once PRs exist: e.g. the 13th issue is GitHub #16 → `PRF-13`). A new
+  key = (count of existing issues) + 1.
+- **Titles.** Issues **and** their PRs are titled `[PRF-N] <concise subject>` — no `type:`
+  prefix. The semantic type (Feature / Bug / Task / …) lives in **labels and the board `Type`
+  field**, not in the title. A PR reuses its issue's key.
+- **Re-keying caution.** Never rename a branch that already has an open PR via GitHub's
+  branch-rename — it deletes the old ref and **closes** the PR (which cannot be reopened). Push
+  a new branch and open a fresh PR instead.
 - PR description: what was done and why, how it was tested, link to the Issue (`Closes #N`).
   The agent opens the PR and stops (status In Review). Opening a PR is autonomous.
 - **Branch cleanup only after merge** — while a PR is open, its branch is not deleted.
-- Commits follow Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`, `docs:`…).
+- Commits follow Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`, `docs:`…) — this is
+  where the change *type* is recorded in git history (titles carry the `[PRF-N]` key instead).
 - Commits made by the agent include a `Co-Authored-By: Claude …` trailer.
 
 ---
@@ -197,7 +208,7 @@ procureflow/
 ├─ packages/
 │  └─ shared/ # shared types & contracts (Zod schemas)
 ├─ .github/workflows/   # CI (GitHub Actions)
-├─ docs/                # task specs (docs/<issue-id>/spec.md), ADRs, BPMN descriptions
+├─ docs/                # task specs (docs/PRF-N/spec.md), ADRs, BPMN descriptions
 ├─ docker-compose.yml   # created in the infrastructure task
 ├─ .env.dist            # environment variable template
 ├─ CHANGELOG.md         # notable changes (Keep a Changelog)

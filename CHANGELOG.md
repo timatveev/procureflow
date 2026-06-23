@@ -7,6 +7,11 @@ and the project aims to follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Dockerized local development environment (#1): root `docker-compose.yml` with Postgres 16,
+  Redis 7, Mailpit, and a minimal `api` service — all images pinned by `sha256` digest, a
+  bridge network, a named `pgdata` volume, and healthchecks (`pg_isready`, `redis-cli ping`,
+  `/healthz`). Minimal Hono health stub (`GET /healthz`) on Bun with a dedicated dev
+  `Dockerfile` and a `bun test`; root `infra:*` scripts and a README setup section.
 - Project constitution `CLAUDE.md`, pnpm-workspace monorepo skeleton
   (`apps/api`, `apps/web`, `packages/shared`) and baseline config
   (`.gitignore`, `.gitattributes`, `.editorconfig`, `.env.dist`, `LICENSE`).

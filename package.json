@@ -11,6 +11,11 @@
     "pnpm": ">=11"
   },
   "scripts": {
-    "//": "Scripts will be filled in during the first infrastructure task (see CLAUDE.md §7)."
+    "dev": "docker compose up",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:reset": "docker compose down -v",
+    "infra:logs": "docker compose logs -f",
+    "infra:ps": "docker compose ps"
   }
 }

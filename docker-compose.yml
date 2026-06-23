@@ -1,0 +1,87 @@
+# docker-compose.yml — ProcureFlow local development stack.
+# Images are pinned by digest (sha256); the human-readable tag is kept in a comment.
+# Refresh a digest with: docker buildx imagetools inspect <ref> --format '{{.Manifest.Digest}}'
+name: procureflow
+
+services:
+  db: # postgres:16-alpine
+    image: postgres:16-alpine@sha256:e013e867e712fec275706a6c51c966f0bb0c93cfa8f51000f85a15f9865a28cb
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks: [procureflow]
+
+  redis: # redis:7-alpine
+    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [procureflow]
+
+  mailpit: # axllent/mailpit:latest
+    image: axllent/mailpit:latest@sha256:37a38e48e9338cd7e89dfeb487f37b02ebfcd9cb23111bed2d345e79d37d6dd6
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+    ports:
+      - "${SMTP_PORT}:1025" # SMTP capture
+      - "${MAILPIT_UI_PORT}:8025" # Web UI
+    networks: [procureflow]
+    # No healthcheck is defined here: the official image already ships its own HEALTHCHECK,
+    # which Compose honours. Mailpit is only a `service_started` dependency for `api` anyway.
+
+  api: # built from apps/api/Dockerfile (oven/bun, target: dev)
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: dev
+    restart: unless-stopped
+    env_file: [.env]
+    ports:
+      - "${API_PORT}:3000"
+    volumes:
+      - ./apps/api:/app # hot reload
+      - /app/node_modules # keep container-installed deps (anonymous volume)
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    networks: [procureflow]
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  procureflow:
+    driver: bridge

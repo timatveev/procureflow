@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnp.*
+.yarn/*
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+.vite/
+
+# Test / coverage
+coverage/
+*.lcov
+
+# Env & secrets
+.env
+.env.*
+!.env.dist
+*.pem
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Claude Code — keep personal local settings out of git (shared settings.json stays)
+.claude/settings.local.json
+
+# Editor / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+*.swp
+*Zone.Identifier
+
+# Bun (API runtime) — lockfile is pnpm-lock.yaml at root
+bun.lockb
+
+# Drizzle local artifacts
+drizzle/.cache/

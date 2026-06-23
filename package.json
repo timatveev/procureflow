@@ -1,0 +1,16 @@
+{
+  "name": "procureflow",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "B2B Enterprise Procurement Portal — Specs Before Code training project",
+  "license": "MIT",
+  "packageManager": "pnpm@11.6.0",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=11"
+  },
+  "scripts": {
+    "//": "Scripts will be filled in during the first infrastructure task (see CLAUDE.md §7)."
+  }
+}

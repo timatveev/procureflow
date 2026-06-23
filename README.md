@@ -26,6 +26,37 @@ packages/shared   # shared contracts (Zod)
 docs/             # task specifications, ADRs, BPMN
 ```
 
+## Local development environment
+
+The whole stack runs in Docker — **Bun is never installed on the host**; it runs only inside
+the `api` container. Prerequisite: Docker + Compose.
+
+```bash
+cp .env.dist .env          # adjust if needed (a dev-only Postgres password is preset)
+docker compose up -d       # start Postgres 16, Redis, Mailpit, and the API
+docker compose ps          # db/redis/api should report "healthy"
+```
+
+| Service | Host URL | Notes |
+| --- | --- | --- |
+| API | http://localhost:3000/healthz | `{ "status": "ok", … }` |
+| Postgres | `localhost:5432` | db `procureflow` / user `procureflow` |
+| Redis | `localhost:6379` | AOF persistence |
+| Mailpit (web UI) | http://localhost:8025 | captured emails |
+| Mailpit (SMTP) | `localhost:1025` | dev mail sink |
+
+```bash
+docker compose logs -f     # follow logs
+docker compose down        # stop (keeps the database volume)
+docker compose down -v     # stop and wipe volumes (fresh database)
+```
+
+> **Changing API dependencies?** The `api` container keeps `node_modules` in an anonymous
+> volume that Compose does not refresh on a plain rebuild. After editing deps, run
+> `docker compose up -d --build --renew-anon-volumes` (or `docker compose down && up -d --build`).
+
+Images are pinned by digest for reproducibility; the API runs with hot reload (`bun --watch`).
+
 ## Status
 
 🚧 Initialization. The roadmap and tasks live on the GitHub project board.

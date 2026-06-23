@@ -25,7 +25,8 @@ coverage/
 npm-debug.log*
 pnpm-debug.log*
 
-# Claude Code — keep personal local settings out of git (shared settings.json stays)
+# Claude Code — local agent settings are not tracked (the harness rewrites them)
+.claude/settings.json
 .claude/settings.local.json
 
 # Editor / OS
